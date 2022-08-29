@@ -1,0 +1,8 @@
+FileVersion = 1
+Dependencies = {corlib = "*", ImGui = "*", RfgTools = "*", "Beef.Linq" = "*"}
+
+[Project]
+Name = "AsmTool"
+TargetType = "BeefGUIApplication"
+StartupObject = "Nanoforge.Program"
+DefaultNamespace = "Nanoforge"
