@@ -98,6 +98,12 @@ namespace ImGui
         	return hovered;
         }
 
+        public static bool Selectable(StringView label, bool selected = false, SelectableFlags flags = (SelectableFlags)0, Vec2 size = Vec2.Zero)
+        {
+            String labelNullTerminated = scope .(label)..Append('\0');
+            return Selectable(labelNullTerminated.Ptr, selected, flags, size);
+        }
+
         extension Vec4
         {
             //Conversion from Mirror.Math.Vec4<f32> to ImGui.Vec4

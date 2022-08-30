@@ -15,6 +15,7 @@ namespace AsmTool.Gui.Panels
         public ImGui.ID DockspaceId = 0;
         public ImGui.ID DockspaceCentralNodeId = 0;
         bool ShowImGuiDemo = true;
+        public bool ShowFrameTime = true;
 
         public override void Update(App app, Gui gui)
         {
@@ -60,10 +61,19 @@ namespace AsmTool.Gui.Panels
 
                 if (ImGui.BeginMenu("View"))
                 {
+                    if (ImGui.MenuItem("Show frametime", "", &ShowFrameTime))
+                    {
+
+                    }
                     ImGui.EndMenu();
                 }
                 if (ImGui.BeginMenu("Tools"))
                 {
+                    if (ImGui.MenuItem("Open test asm_pc"))
+                    {
+                        StringView testAsmPath = @"I:\_AsmToolTesting\terr01_l0\terr01_l0.asm_pc";
+                        gui.OpenDocument("terr01_l0.asm_pc", testAsmPath, new AsmEditorDocument(testAsmPath));
+                    }
                     if (ImGui.MenuItem("Validate"))
                     {
                         Win32.MessageBoxA(0, "This feature hasn't been implemented yet.", "Not implemented", .OK);
@@ -79,12 +89,15 @@ namespace AsmTool.Gui.Panels
                 }
 
                 var drawList = ImGui.GetWindowDrawList();
-                String realFrameTime = scope String()..AppendF("{0:G3}", frameData.AverageFrameTime * 1000.0f);
-                String totalFrameTime = scope String()..AppendF("/  {0:G4}", frameData.DeltaTime * 1000.0f);
-                drawList.AddText(.(ImGui.GetCursorPosX(), 5.0f), 0xF2F5FAFF, "|    Frametime (ms): ");
-                var textSize = ImGui.CalcTextSize("|    Frametime (ms): ");
-                drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x, 5.0f), ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor), realFrameTime.CStr());
-                drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x + 42.0f, 5.0f), ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor), totalFrameTime.CStr());
+                if (ShowFrameTime)
+                {
+                    String realFrameTime = scope String()..AppendF("{0:G3}", frameData.AverageFrameTime * 1000.0f);
+                    String totalFrameTime = scope String()..AppendF("/  {0:G4}", frameData.DeltaTime * 1000.0f);
+                    drawList.AddText(.(ImGui.GetCursorPosX(), 5.0f), 0xF2F5FAFF, "|    Frametime (ms): ");
+                    var textSize = ImGui.CalcTextSize("|    Frametime (ms): ");
+                    drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x, 5.0f), ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor), realFrameTime.CStr());
+                    drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x + 42.0f, 5.0f), ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor), totalFrameTime.CStr());
+                }
 
                 ImGui.EndMainMenuBar();
             }

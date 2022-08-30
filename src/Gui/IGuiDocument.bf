@@ -18,16 +18,10 @@ namespace AsmTool.Gui
 
         ///Returns true if the document can be closed immediately. Used to ensure worker threads are stopped before deleting the document.
         public bool CanClose(App app, Gui gui);
-
-        ///Override to draw custom outliner. Contains registry objects/buffers relevant to the object. E.g. TerritoryDocument.Outliner would show a list of visible objects
-        public void Outliner(App app, Gui gui);
-
-        ///Override to draw custom inspector. For viewing and/or editing the currently selected outliner object. 
-        public void Inspector(App app, Gui gui);
     }
 
     ///Base class for all gui documents. Has fields and functions that all documents should have
-    public class GuiDocumentBase : IGuiPanel
+    public class GuiDocumentBase : IGuiDocument
     {
         public append String Title;
         public append String UID; //Unique ID for the document. Usually will be the document path if its a real file
@@ -36,12 +30,10 @@ namespace AsmTool.Gui
         public bool UnsavedChanges = false;
         public bool HasMenuBar = false;
         public bool NoWindowPadding = false;
-        public bool HasCustomOutlinerAndInspector = false;
         public bool ResetOnClose = false;
 
         public virtual void Update(App app, Gui gui)
         {
-            HasCustomOutlinerAndInspector = false;
             return;
         }
 
@@ -58,16 +50,6 @@ namespace AsmTool.Gui
         public virtual bool CanClose(App app, Gui gui)
         {
             return true;
-        }
-
-        public virtual void Outliner(App app, Gui gui)
-        {
-            return;
-        }
-
-        public virtual void Inspector(App app, Gui gui)
-        {
-            return;
         }
     }
 }

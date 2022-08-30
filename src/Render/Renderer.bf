@@ -1,4 +1,3 @@
-using AsmTool.Render.Resources;
 using AsmTool.Render.ImGui;
 using System.Collections;
 using System.Diagnostics;
