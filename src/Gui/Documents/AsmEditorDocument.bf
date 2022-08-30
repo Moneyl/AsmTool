@@ -25,7 +25,7 @@ namespace AsmTool.Gui.Documents
             Path.GetDirectoryPath(asmFilePath, AsmFolderPath);
             HasMenuBar = false;
             NoWindowPadding = false;
-            UnsavedChanges = true;
+            UnsavedChanges = false;
 
             //Load asm_pc file
             FileStream stream = scope .()..Open(AsmFilePath, .Read, .Read);
@@ -81,57 +81,73 @@ namespace AsmTool.Gui.Documents
                 ImGui.TableSetupColumn("Compressed size", .None);
                 ImGui.TableHeadersRow();
 
-                for (AsmFileV5.Container container in AsmFile.Containers)
+                //Use list clipper to only render a subset of the items. Performance on large asms like terr01_l0.asm_pc is terrible if we render every single line
+                ImGui.ListClipper clipper = .();
+                clipper.Begin((i32)AsmFile.Containers.Count);
+                while (clipper.Step())
                 {
-                    bool selected = (container == _selectedContainer);
-                    String containerNameWithExt = scope $"{container.Name}.str2_pc";
-
-                    //TODO: Calculate this once ahead of time instead of every frame
-                    //TODO: Consider making all name strings in this document and those of RfgTools.Formats.AsmFileV5.Container lowercase to avoid needing to explicitly do caseless comparisons.
-					//      Have had some many nanoforge bugs from inconsistent casing between an asm_pc and vpp_pc file
-
-                    //Check if container has a corresponding str2_pc file.
-                    bool inAsmFolder = FileInAsmFolder(containerNameWithExt);
-                    if (!inAsmFolder)
+                    for (i32 row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
                     {
-                        ImGui.PushStyleColor(.Text, .(1.0f, 0.8f, 0.0f, 1.0f)); //Indicate when container doesn't have a matching str2_pc
+                        AsmFileV5.Container container = AsmFile.Containers[row];
+                        bool selected = (container == _selectedContainer);
+                        String containerNameWithExt = scope $"{container.Name}.str2_pc";
+
+                        //TODO: Calculate this once ahead of time instead of every frame
+                        //TODO: Consider making all name strings in this document and those of RfgTools.Formats.AsmFileV5.Container lowercase to avoid needing to explicitly do caseless comparisons.
+                        //      Have had some many nanoforge bugs from inconsistent casing between an asm_pc and vpp_pc file
+
+                        //Check if container has a corresponding str2_pc file.
+                        bool inAsmFolder = FileInAsmFolder(containerNameWithExt);
+
+                        //See if the container has the flags we'd expect of a virtual container (container that doesn't have it's own str2_pc file).
+						//Still don't know if there's a flag that identifies this or if it has to be brute forced.
+                        bool hasExpectedVirtualFlags = ((u16)container.Flags & 512) != 0;
+
+                        //Change text color in certain cases
+                        if (!inAsmFolder)
+                        {
+                            if (hasExpectedVirtualFlags)
+                                ImGui.PushStyleColor(.Text, .(1.0f, 0.8f, 0.0f, 1.0f)); //Indicate when container doesn't have a matching str2_pc
+                            else
+                                ImGui.PushStyleColor(.Text, .(0.8f, 0.0f, 0.0f, 1.0f)); //Virtual container but doesn't have the flag that is suspected to indicate when one is virtual
+                        }
+
+                        //Name
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable(container.Name, selected, .SpanAllColumns))
+                        {
+                            if (container == _selectedContainer)
+                                _selectedContainer = null; //Clicking the already selected container deselects it
+                            else
+                                _selectedContainer = container;
+                        }
+
+                        if (!inAsmFolder)
+                        {
+                            ImGui.PopStyleColor();
+                        }
+
+                        //Type
+                        ImGui.TableNextColumn();
+                        ImGui.Text(container.Type.ToString(.. scope .()));
+
+                        //Flags
+                        ImGui.TableNextColumn();
+                        ImGui.Text(((u16)container.Flags).ToString(.. scope .()));
+
+                        //# of primitives
+                        ImGui.TableNextColumn();
+                        ImGui.Text(container.PrimitiveCount.ToString(.. scope .()));
+
+                        //Data offset
+                        ImGui.TableNextColumn();
+                        ImGui.Text(container.DataOffset.ToString(.. scope .()));
+
+                        //Compressed size
+                        ImGui.TableNextColumn();
+                        ImGui.Text(container.CompressedSize.ToString(.. scope .()));
                     }
-
-                    //Name
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    if (ImGui.Selectable(container.Name, selected, .SpanAllColumns))
-                    {
-                        if (container == _selectedContainer)
-                            _selectedContainer = null; //Clicking the already selected container deselects it
-                        else
-                            _selectedContainer = container;
-                    }
-
-                    if (!inAsmFolder)
-                    {
-                        ImGui.PopStyleColor();
-                    }
-
-                    //Type
-                    ImGui.TableNextColumn();
-                    ImGui.Text(container.Type.ToString(.. scope .()));
-
-                    //Flags
-                    ImGui.TableNextColumn();
-                    ImGui.Text(((u16)container.Flags).ToString(.. scope .()));
-
-                    //# of primitives
-                    ImGui.TableNextColumn();
-                    ImGui.Text(container.PrimitiveCount.ToString(.. scope .()));
-
-                    //Data offset
-                    ImGui.TableNextColumn();
-                    ImGui.Text(container.DataOffset.ToString(.. scope .()));
-
-                    //Compressed size
-                    ImGui.TableNextColumn();
-                    ImGui.Text(container.CompressedSize.ToString(.. scope .()));
                 }
 
                 ImGui.EndTable();
@@ -153,45 +169,50 @@ namespace AsmTool.Gui.Documents
                     ImGui.TableSetupColumn("SplitExtIndex", .None);
                     ImGui.TableHeadersRow();
 
-                    for (AsmFileV5.Primitive primitive in _selectedContainer.Primitives)
+                    ImGui.ListClipper clipper = .();
+                    clipper.Begin((i32)_selectedContainer.Primitives.Count);
+                    while (clipper.Step())
                     {
-                        ImGui.TableNextRow();
-                        ImGui.TableNextColumn();
-
-                        bool selected = (primitive == _selectedPrimitive);
-
-                        //Name
-                        if (ImGui.Selectable(primitive.Name, selected, .SpanAllColumns))
+                        for (i32 row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
                         {
-                            if (primitive == _selectedPrimitive)
-                                _selectedPrimitive = null; //Double clicking clears selection
-                            else
-                                _selectedPrimitive = primitive;
+                            AsmFileV5.Primitive primitive = _selectedContainer.Primitives[row];
+                            bool selected = (primitive == _selectedPrimitive);
+
+                            //Name
+                            ImGui.TableNextRow();
+                            ImGui.TableNextColumn();
+                            if (ImGui.Selectable(primitive.Name, selected, .SpanAllColumns))
+                            {
+                                if (primitive == _selectedPrimitive)
+                                    _selectedPrimitive = null; //Double clicking clears selection
+                                else
+                                    _selectedPrimitive = primitive;
+                            }
+
+                            //Type
+                            ImGui.TableNextColumn();
+                            ImGui.Text(primitive.Type.ToString(.. scope .()));
+
+                            //Allocator
+                            ImGui.TableNextColumn();
+                            ImGui.Text(primitive.Allocator.ToString(.. scope .()));
+
+                            //Flags
+                            ImGui.TableNextColumn();
+                            ImGui.Text(((u8)primitive.Flags).ToString(.. scope .()));
+
+                            //Header size
+                            ImGui.TableNextColumn();
+                            ImGui.Text(primitive.HeaderSize.ToString(.. scope .()));
+
+                            //Data size
+                            ImGui.TableNextColumn();
+                            ImGui.Text(primitive.DataSize.ToString(.. scope .()));
+
+                            //SplitExtIndex
+                            ImGui.TableNextColumn();
+                            ImGui.Text(primitive.SplitExtIndex.ToString(.. scope .()));
                         }
-
-                        //Type
-                        ImGui.TableNextColumn();
-                        ImGui.Text(primitive.Type.ToString(.. scope .()));
-
-                        //Allocator
-                        ImGui.TableNextColumn();
-                        ImGui.Text(primitive.Allocator.ToString(.. scope .()));
-
-                        //Flags
-                        ImGui.TableNextColumn();
-                        ImGui.Text(((u8)primitive.Flags).ToString(.. scope .()));
-
-                        //Header size
-                        ImGui.TableNextColumn();
-                        ImGui.Text(primitive.HeaderSize.ToString(.. scope .()));
-
-                        //Data size
-                        ImGui.TableNextColumn();
-                        ImGui.Text(primitive.DataSize.ToString(.. scope .()));
-
-                        //SplitExtIndex
-                        ImGui.TableNextColumn();
-                        ImGui.Text(primitive.SplitExtIndex.ToString(.. scope .()));
                     }
 
                     ImGui.EndTable();

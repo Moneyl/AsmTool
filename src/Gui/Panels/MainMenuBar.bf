@@ -4,6 +4,7 @@ using System;
 using ImGui;
 using System.Collections;
 using AsmTool.Gui.Documents;
+using System.IO;
 using Win32;
 
 namespace AsmTool.Gui.Panels
@@ -71,8 +72,8 @@ namespace AsmTool.Gui.Panels
                 {
                     if (ImGui.MenuItem("Open test asm_pc"))
                     {
-                        StringView testAsmPath = @"I:\_AsmToolTesting\terr01_l0\terr01_l0.asm_pc";
-                        gui.OpenDocument("terr01_l0.asm_pc", testAsmPath, new AsmEditorDocument(testAsmPath));
+                        StringView testAsmPath = @"I:\_AsmToolTesting\mpdlc_division\mpdlc_division.asm_pc";
+                        gui.OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
                     }
                     if (ImGui.MenuItem("Validate"))
                     {

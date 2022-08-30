@@ -1,9 +1,11 @@
+using AsmTool.Gui.Documents;
 using System.Collections;
 using AsmTool.Gui.Panels;
-using AsmTool.Math;
 using System.Threading;
+using AsmTool.Math;
 using AsmTool.App;
 using System.Linq;
+using System.IO;
 using AsmTool;
 using System;
 using ImGui;
@@ -30,6 +32,10 @@ namespace AsmTool.Gui
 		{
             AddPanel("", true, MainMenuBar);
             AddPanel("View/State viewer", true, new StateViewer());
+
+            //Hardcoded to open test file for the moment. Will remove later or give it a keybind
+            StringView testAsmPath = @"I:\_AsmToolTesting\interface\In_world_gps_preload.asm_pc";
+            OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
 		}
 
 		[SystemStage(.Update)]
