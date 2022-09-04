@@ -75,9 +75,9 @@ namespace AsmTool.Gui.Documents
             //Set custom highlight colors for the tables
             ImGui.Vec4 selectedColor = .(0.157f, 0.350f, 0.588f, 1.0f);
             ImGui.Vec4 highlightColor = .(selectedColor.x * 1.1f, selectedColor.y * 1.1f, selectedColor.z * 1.1f, 1.0f);
-            ImGui.PushStyleColor(.Header, selectedColor);
-            ImGui.PushStyleColor(.HeaderHovered, highlightColor);
-            ImGui.PushStyleColor(.HeaderActive, highlightColor);
+            ImGui.ScopedStyleColor!(ImGui.Col.Header, selectedColor); //TODO: Bug requires explicitly specifying ImGui.Col.Header instead of doing .Col. Change once the bug has been fixed.
+            ImGui.ScopedStyleColor!(ImGui.Col.HeaderHovered, highlightColor);
+            ImGui.ScopedStyleColor!(ImGui.Col.HeaderActive, highlightColor);
 
             ImGui.NextColumn();
             DrawContainerTable(app, gui);
@@ -87,7 +87,6 @@ namespace AsmTool.Gui.Documents
             DrawPrimitiveTable(app, gui);
             DrawPrimitiveEditor(app, gui);
 
-            ImGui.PopStyleColor(3);
             ImGui.Columns(1);
         }
 
@@ -502,6 +501,7 @@ namespace AsmTool.Gui.Documents
                 {
                     using (ImGui.Font(FontManager.FontL))
                     {
+                        ImGui.ScopedFont!(FontManager.FontL);
                         ImGui.Text(_selectedPrimitive.Name);
                     }
 

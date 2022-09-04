@@ -298,7 +298,7 @@ namespace ImGui
             style.Colors[(int)ImGui.Col.TableRowBgAlt] = .(0.12f, 0.12f, 0.14f, 1.00f);
         }
 
-        public struct ScopedFont : IDisposable
+        public struct DisposableImGuiFont : IDisposable
         {
             ImGui.Font* _font = null;
             public this(ImGui.Font* font)
@@ -313,9 +313,39 @@ namespace ImGui
             }
         }
 
-        public static ScopedFont Font(FontManager.ImGuiFont font)
+        public static DisposableImGuiFont Font(FontManager.ImGuiFont font)
         {
             return .(font.Font);
+        }
+
+        public static mixin ScopedFont(FontManager.ImGuiFont font)
+        {
+            DisposableImGuiFont disposable = .(font.Font);
+            defer disposable.Dispose();
+        }
+
+        public struct DisposableStyleColor : IDisposable
+        {
+            ImGui.Col _idx;
+            ImGui.Vec4 _color;
+
+            public this(Col idx, Vec4 color)
+            {
+                _idx = idx;
+                _color = color;
+                ImGui.PushStyleColor(idx, color);
+            }
+
+            public void Dispose()
+            {
+                ImGui.PopStyleColor();
+            }
+        }
+
+        public static mixin ScopedStyleColor(ImGui.Col idx, Vec4 color)
+        {
+            DisposableStyleColor styleColor = .(idx, color);
+            defer styleColor.Dispose();
         }
 
         extension Vec4
