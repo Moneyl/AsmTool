@@ -34,8 +34,18 @@ namespace AsmTool.Gui
             AddPanel("View/State viewer", true, new StateViewer());
 
             //Hardcoded to open test file for the moment. Will remove later or give it a keybind
-            StringView testAsmPath = @"I:\_AsmToolTesting\interface\In_world_gps_preload.asm_pc";
+            StringView testAsmPath = @"I:\_AsmToolTesting\terr01_l0\terr01_l0.asm_pc";
             OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
+
+            //Open asm_pc files passed to CLI. Files double clicked in the windows file explorer are also opened this way if file association is set
+            BuildConfig config = app.GetResource<BuildConfig>();
+            for (String arg in config.Arguments)
+            {
+                if (File.Exists(arg) && Path.GetExtension(arg, .. scope .()) == ".asm_pc")
+                {
+                    OpenDocument(Path.GetFileName(arg, .. scope .()), arg, new AsmEditorDocument(arg));
+                }
+            }
 		}
 
 		[SystemStage(.Update)]

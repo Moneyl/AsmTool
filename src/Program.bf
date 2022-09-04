@@ -21,7 +21,7 @@ namespace AsmTool
 #endif
 
             App.Build!(AppState.Running)
-                ..AddResource<BuildConfig>(new .("AsmTool", assetsBasePath))
+                ..AddResource<BuildConfig>(new .("AsmTool", assetsBasePath, args))
                 ..AddSystem<Window>(isResource: true)
                 ..AddSystem<Input>(isResource: true)
                 ..AddSystem<Renderer>()

@@ -81,6 +81,35 @@ namespace AsmTool.Gui.Panels
                     }
                     ImGui.EndMenu();
                 }
+                if (ImGui.BeginMenu("Theme"))
+                {
+                    bool darkBlueSelected = ImGui.CurrentTheme() == .DarkBlue;
+                    bool orangeSelected = ImGui.CurrentTheme() == .Orange;
+                    bool darkSelected = ImGui.CurrentTheme() == .Dark;
+                    bool lightSelected = ImGui.CurrentTheme() == .Light;
+                    bool classicSelected = ImGui.CurrentTheme() == .Classic;
+                    if (ImGui.MenuItem("Dark blue", null, darkBlueSelected))
+                    {
+                        ImGui.SetThemePreset(.DarkBlue);
+                    }
+                    if (ImGui.MenuItem("Orange", null, orangeSelected))
+                    {
+                        ImGui.SetThemePreset(.Orange);
+                    }
+                    if (ImGui.MenuItem("Dark", null, darkSelected))
+                    {
+                        ImGui.SetThemePreset(.Dark);
+                    }
+                    if (ImGui.MenuItem("Light", null, lightSelected))
+                    {
+                        ImGui.SetThemePreset(.Light);
+                    }
+                    if (ImGui.MenuItem("Classic", null, classicSelected))
+                    {
+                        ImGui.SetThemePreset(.Classic);
+                    }
+                    ImGui.EndMenu();
+                }
                 if (ImGui.BeginMenu("Help"))
                 {
                     if (ImGui.MenuItem("Welcome")) { }
@@ -92,12 +121,15 @@ namespace AsmTool.Gui.Panels
                 var drawList = ImGui.GetWindowDrawList();
                 if (ShowFrameTime)
                 {
+                    uint32 primaryTextColor = ImGui.ColorConvertFloat4ToU32(ImGui.GetStyle().Colors[(int)ImGui.Col.Text]);
+                    uint32 secondaryTextColor = ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor);
                     String realFrameTime = scope String()..AppendF("{0:G3}", frameData.AverageFrameTime * 1000.0f);
                     String totalFrameTime = scope String()..AppendF("/  {0:G4}", frameData.DeltaTime * 1000.0f);
-                    drawList.AddText(.(ImGui.GetCursorPosX(), 5.0f), 0xF2F5FAFF, "|    Frametime (ms): ");
+
+                    drawList.AddText(.(ImGui.GetCursorPosX(), 5.0f), primaryTextColor, "|    Frametime (ms): ");
                     var textSize = ImGui.CalcTextSize("|    Frametime (ms): ");
-                    drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x, 5.0f), ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor), realFrameTime.CStr());
-                    drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x + 42.0f, 5.0f), ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor), totalFrameTime.CStr());
+                    drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x, 5.0f), secondaryTextColor, realFrameTime.CStr());
+                    drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x + 42.0f, 5.0f), secondaryTextColor, totalFrameTime.CStr());
                 }
 
                 ImGui.EndMainMenuBar();
