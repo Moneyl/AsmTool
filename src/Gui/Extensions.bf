@@ -298,6 +298,26 @@ namespace ImGui
             style.Colors[(int)ImGui.Col.TableRowBgAlt] = .(0.12f, 0.12f, 0.14f, 1.00f);
         }
 
+        public struct ScopedFont : IDisposable
+        {
+            ImGui.Font* _font = null;
+            public this(ImGui.Font* font)
+            {
+                _font = font;
+                ImGui.PushFont(_font);
+            }
+
+            public void Dispose()
+            {
+                ImGui.PopFont();
+            }
+        }
+
+        public static ScopedFont Font(FontManager.ImGuiFont font)
+        {
+            return .(font.Font);
+        }
+
         extension Vec4
         {
             //Conversion from Mirror.Math.Vec4<f32> to ImGui.Vec4
