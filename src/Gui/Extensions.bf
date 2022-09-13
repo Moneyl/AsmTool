@@ -90,12 +90,18 @@ namespace ImGui
                 ImGui.PushFont(Font);
                 ImGui.BeginTooltip();
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35.0f);
-                ImGui.TextUnformatted(description.Ptr);
+                ImGui.TextUnformatted(description.Ptr, description.EndPtr);
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();
                 ImGui.PopFont();
             }
         	return hovered;
+        }
+
+        public static bool HelpMarker(StringView tooltip)
+        {
+            ImGui.TextDisabled("(?)");
+            return ImGui.TooltipOnPrevious(tooltip);
         }
 
         public static bool Selectable(StringView label, bool selected = false, SelectableFlags flags = (SelectableFlags)0, Vec2 size = Vec2.Zero)
@@ -143,6 +149,12 @@ namespace ImGui
             cbUserData.ChainCallbackUserData = userData;
             buffer.EnsureNullTerminator();
             return ImGui.InputText(labelNullTerminated.Ptr, buffer.CStr(), (u64)buffer.Length + 1, flagsFinal, => InputTextCallback, &cbUserData);
+        }
+
+        public static void SetClipboardText(StringView str)
+        {
+            String strNullTerminated = scope .(str, .NullTerminate);
+            ImGui.SetClipboardText(strNullTerminated.Ptr);
         }
 
         public enum ThemePreset

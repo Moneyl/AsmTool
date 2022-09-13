@@ -123,13 +123,18 @@ namespace AsmTool.Gui.Documents
         {
             if (ImGui.BeginTable("Containers", 6, .ScrollY | .RowBg | .BordersOuter | .BordersV | .Resizable | .Reorderable | .Hideable | .SizingStretchProp, .(0.0f, _tableHeight)))
             {
+#if DEBUG
+                bool hideAdvancedColumnsByDefault = true;
+#else
+                bool hideAdvancedColumnsByDefault = true;
+#endif
                 ImGui.TableSetupScrollFreeze(0, 1); //Make first column always visible
                 ImGui.TableSetupColumn("Name", .None);
                 ImGui.TableSetupColumn("Type", .None);
                 ImGui.TableSetupColumn("Flags", .None);
-                ImGui.TableSetupColumn("# Primitives", .None);
-                ImGui.TableSetupColumn("Data offset", .None);
-                ImGui.TableSetupColumn("Compressed size", .None);
+                ImGui.TableSetupColumn("# Primitives", hideAdvancedColumnsByDefault ? .DefaultHide : .None);
+                ImGui.TableSetupColumn("Data offset", hideAdvancedColumnsByDefault ? .DefaultHide : .None);
+                ImGui.TableSetupColumn("Compressed size", hideAdvancedColumnsByDefault ? .DefaultHide : .None);
                 ImGui.TableHeadersRow();
 
                 //Use list clipper to only render a subset of the items. Performance on large asms like terr01_l0.asm_pc is terrible if we render every single line
@@ -152,20 +157,20 @@ namespace AsmTool.Gui.Documents
 
                         //See if the container has the flags we'd expect of a virtual container (container that doesn't have it's own str2_pc file).
                         //Still don't know if there's a flag that identifies this or if it has to be brute forced.
-                        bool hasExpectedVirtualFlags = ((u16)container.Flags & 512) != 0;
+                        bool virtualFlag = ((u16)container.Flags & 512) != 0;
+                        bool passive = ((u16)container.Flags & 256) != 0;
+                        bool real = ((u16)container.Flags & 128) != 0;
 
                         //Change text color in certain cases
-                        if (!inAsmFolder)
+                        /*if (!inAsmFolder)
                         {
-                            if (hasExpectedVirtualFlags)
-                                ImGui.PushStyleColor(.Text, .(1.0f, 0.8f, 0.0f, 1.0f)); //Indicate when container doesn't have a matching str2_pc
+                            if (virtualFlag && passive)
+                                ImGui.PushStyleColor(.Text, .(1.0f, 0.8f, 0.0f, 1.0f)); //Indicate when container doesn't have a matching str2_pc but has flags that indicate it's files are in this vpp_pc
+                            else if (virtualFlag)
+                                ImGui.PushStyleColor(.Text, .(1.0f, 0.4f, 0.0f, 1.0f)); //File is in the precache vpp_pc
                             else
-                                ImGui.PushStyleColor(.Text, .(0.8f, 0.0f, 0.0f, 1.0f)); //Virtual container but doesn't have the flag that is suspected to indicate when one is virtual
-                        }
-                        else if (hasExpectedVirtualFlags)
-                        {
-                            ImGui.PushStyleColor(.Text, .(1.0f, 0.4f, 0.0f, 1.0f)); //Highlight orange when container has virtual flag but also has a str2_pc
-                        }
+                                ImGui.PushStyleColor(.Text, .(0.8f, 0.0f, 0.0f, 1.0f)); //Files that don't have their own vpp_pc should have the passive flag
+                        }*/
 
                         //Name
                         ImGui.TableNextRow();
@@ -196,9 +201,36 @@ namespace AsmTool.Gui.Documents
                                 }
             				}
                         }
-                        if (!inAsmFolder || hasExpectedVirtualFlags)
+                        /*if (!inAsmFolder || virtualFlag)
                         {
                             ImGui.PopStyleColor();
+                        }*/
+
+                        //Right click context menu
+                        if (ImGui.BeginPopupContextItem())
+                        {
+                            if (ImGui.Selectable("Copy name to clipboard"))
+                            {
+                                ImGui.SetClipboardText(container.Name);
+                            }
+
+                            ImGui.EndPopup();
+                        }
+                        if (container.Primitives.Count == 0)
+                        {
+                            ImGui.SameLine();
+                            ImGui.TextColored("(Empty)", ImGui.SecondaryTextColor);
+                            //ImGui.TextDisabled("(Empty)");
+                        }
+                        if (virtualFlag && passive)
+                        {
+                            ImGui.SameLine();
+                            ImGui.TextColored("(Virtual)", .(1.0f, 0.8f, 0.0f, 1.0f));
+                        }
+                        else if (virtualFlag)
+                        {
+                            ImGui.SameLine();
+                            ImGui.TextColored("(Remote)", .(1.0f, 0.4f, 0.0f, 1.0f));
                         }
 
                         //Type
@@ -300,8 +332,11 @@ namespace AsmTool.Gui.Documents
                     ImGui.EndCombo();
                 }
 
-                ImGui.InputScalar("Data offset", .U32, &_selectedContainer.DataOffset);
-                ImGui.InputScalar("Compressed size", .U32, &_selectedContainer.CompressedSize);
+                if (gui.AdvancedModeEnabled)
+                {
+                    ImGui.InputScalar("Data offset", .U32, &_selectedContainer.DataOffset);
+                    ImGui.InputScalar("Compressed size", .U32, &_selectedContainer.CompressedSize);
+                }
                 ImGui.PopItemWidth();
 
                 if (ImGui.CollapsingHeader("Flags##ContainerFlags", .DefaultOpen))
@@ -320,9 +355,9 @@ namespace AsmTool.Gui.Documents
                     bool flag4 = GetBitflag!(flags, 4);
                     bool flag5 = GetBitflag!(flags, 5);
                     bool releaseError = GetBitflag!(flags, 6); //Runtime flag. Set if stream2_container::req_release fails
-                    bool flag7 = GetBitflag!(flags, 7);
+                    bool real = GetBitflag!(flags, 7);
                     bool passive = GetBitflag!(flags, 8); //If it's true the container is placed into the passive stream queue. It's unknown what "passive" means in this case.
-                    bool flag9 = GetBitflag!(flags, 9);
+                    bool virtualFlag = GetBitflag!(flags, 9);
                     bool flag10 = GetBitflag!(flags, 10);
                     bool flag11 = GetBitflag!(flags, 11);
                     bool flag12 = GetBitflag!(flags, 12);
@@ -340,10 +375,27 @@ namespace AsmTool.Gui.Documents
                     if (ImGui.Checkbox("Flag3", &flag3))                        changed = true;
                     if (ImGui.Checkbox("Flag4", &flag4))                        changed = true;
                     if (ImGui.Checkbox("Flag5", &flag5))                        changed = true;
+
                     if (ImGui.Checkbox("ReleaseError", &releaseError))          changed = true;
-                    if (ImGui.Checkbox("Flag7", &flag7))                        changed = true;
+                    ImGui.SameLine();
+                    ImGui.HelpMarker("Believed to be runtime only.");
+
+                    if (ImGui.Checkbox("Real", &real))                        changed = true;
+                    ImGui.SameLine();
+                    ImGui.HelpMarker("Has a str2_pc file with its name. When this is checked Passive and Virtual shouldn't be checked.");
+
+                    bool disablePassiveAndVirtual = !gui.AdvancedModeEnabled && real; //Passive and virtual shouldn't be modified when real is set
+                    if (disablePassiveAndVirtual) ImGui.BeginDisabled();
                     if (ImGui.Checkbox("Passive", &passive))                    changed = true;
-                    if (ImGui.Checkbox("Flag9", &flag9))                        changed = true;
+                    ImGui.SameLine();
+                    ImGui.HelpMarker("The primitives of this container are inside this vpp_pc. Only should be checked for virtual containers.");
+
+                    if (ImGui.Checkbox("Virtual", &virtualFlag))                changed = true;
+                    ImGui.SameLine();
+                    ImGui.HelpMarker("The container doesn't have a str2_pc file. Its primitives are stored in a different str2_pc (commonly ns_base.str2_pc in MP/WC maps) or in the precache vpp_pc.");
+
+                    if (disablePassiveAndVirtual) ImGui.EndDisabled();
+
                     if (ImGui.Checkbox("Flag10", &flag10))                      changed = true;
                     if (ImGui.Checkbox("Flag11", &flag11))                      changed = true;
                     if (ImGui.Checkbox("Flag12", &flag12))                      changed = true;
@@ -364,9 +416,9 @@ namespace AsmTool.Gui.Documents
                         if (flag4)                      newFlags |= (1 << 4);
                         if (flag5)                      newFlags |= (1 << 5);
                         if (releaseError)               newFlags |= (1 << 6);
-                        if (flag7)                      newFlags |= (1 << 7);
+                        if (real)                      newFlags |= (1 << 7);
                         if (passive)                    newFlags |= (1 << 8);
-                        if (flag9)                      newFlags |= (1 << 9);
+                        if (virtualFlag)                      newFlags |= (1 << 9);
                         if (flag10)                     newFlags |= (1 << 10);
                         if (flag11)                     newFlags |= (1 << 11);
                         if (flag12)                     newFlags |= (1 << 12);
@@ -394,13 +446,19 @@ namespace AsmTool.Gui.Documents
 
             if (ImGui.BeginTable("Primitives", 7, .ScrollY | .RowBg | .BordersOuter | .BordersV | .Resizable | .Reorderable | .Hideable | .SizingStretchProp, .(0.0f, _tableHeight)))
             {
+                #if DEBUG
+                bool hideAdvancedColumnsByDefault = true;
+#else
+                bool hideAdvancedColumnsByDefault = true;
+#endif
+
                 ImGui.TableSetupScrollFreeze(0, 1); //Make first column always visible
                 ImGui.TableSetupColumn("Name", .None);
                 ImGui.TableSetupColumn("Type", .None);
                 ImGui.TableSetupColumn("Allocator", .None);
                 ImGui.TableSetupColumn("Flags", .None);
-                ImGui.TableSetupColumn("Header size", .None);
-                ImGui.TableSetupColumn("Data size", .None);
+                ImGui.TableSetupColumn("Header size", hideAdvancedColumnsByDefault ? .DefaultHide : .None);
+                ImGui.TableSetupColumn("Data size", hideAdvancedColumnsByDefault ? .DefaultHide : .None);
                 ImGui.TableSetupColumn("SplitExtIndex", .DefaultHide);
                 ImGui.TableHeadersRow();
 
@@ -428,6 +486,16 @@ namespace AsmTool.Gui.Documents
             				}
                             _primitiveNameEditEnabled = false;
                             _primitiveNameEditBuffer.Clear();
+                        }
+                        //Right click context menu
+                        if (ImGui.BeginPopupContextItem())
+                        {
+                            if (ImGui.Selectable("Copy name to clipboard"))
+                            {
+                                ImGui.SetClipboardText(primitive.Name);
+                            }
+
+                            ImGui.EndPopup();
                         }
 
                         //Type
@@ -556,9 +624,12 @@ namespace AsmTool.Gui.Documents
                     ImGui.EndCombo();
                 }
 
-                ImGui.InputScalar("Header size", .S32, &_selectedPrimitive.HeaderSize);
-                ImGui.InputScalar("Data size", .S32, &_selectedPrimitive.DataSize);
-                ImGui.InputScalar("SplitExtIndex", .U8, &_selectedPrimitive.SplitExtIndex);
+                if (gui.AdvancedModeEnabled)
+                {
+                    ImGui.InputScalar("Header size", .S32, &_selectedPrimitive.HeaderSize);
+                    ImGui.InputScalar("Data size", .S32, &_selectedPrimitive.DataSize);
+                    ImGui.InputScalar("SplitExtIndex", .U8, &_selectedPrimitive.SplitExtIndex);
+                }
                 ImGui.PopItemWidth();
 
                 if (ImGui.CollapsingHeader("Flags", .DefaultOpen))
@@ -572,7 +643,7 @@ namespace AsmTool.Gui.Documents
                     u8 flags = (u8)_selectedPrimitive.Flags;
                     bool flag0 = GetBitflag!(flags, 0);
                     bool flag1 = GetBitflag!(flags, 1);
-                    bool flag2 = GetBitflag!(flags, 2);
+                    bool split = GetBitflag!(flags, 2);
                     bool flag3 = GetBitflag!(flags, 3);
                     bool flag4 = GetBitflag!(flags, 4);
                     bool flag5 = GetBitflag!(flags, 5);
@@ -585,7 +656,10 @@ namespace AsmTool.Gui.Documents
                     ImGui.Indent(indent);
                     if (ImGui.Checkbox("Flag0", &flag0))                        changed = true;
                     if (ImGui.Checkbox("Flag1", &flag1))                        changed = true;
-                    if (ImGui.Checkbox("Flag2", &flag2))                        changed = true;
+                    if (ImGui.Checkbox("Split", &split))                        changed = true;
+                    ImGui.SameLine();
+                    ImGui.HelpMarker("This primitive is split into two files. E.g. textures are typically a pair of files, a .cpeg_pc file and a .gpeg_pc file.");
+
                     if (ImGui.Checkbox("Flag3", &flag3))                        changed = true;
                     if (ImGui.Checkbox("Flag4", &flag4))                        changed = true;
                     if (ImGui.Checkbox("Flag5", &flag5))                        changed = true;
@@ -600,7 +674,7 @@ namespace AsmTool.Gui.Documents
                         u8 newFlags = 0;
                         if (flag0)                      newFlags |= (1 << 0);
                         if (flag1)                      newFlags |= (1 << 1);
-                        if (flag2)                      newFlags |= (1 << 2);
+                        if (split)                      newFlags |= (1 << 2);
                         if (flag3)                      newFlags |= (1 << 3);
                         if (flag4)                      newFlags |= (1 << 4);
                         if (flag5)                      newFlags |= (1 << 5);

@@ -15,7 +15,7 @@ namespace AsmTool
 		{
             //TODO: Fix needing to manually set this. Should auto set using build system
 #if DEBUG
-            StringView assetsBasePath = "C:/Users/moneyl/source/repos/AsmTool/assets/";
+            StringView assetsBasePath = "C:/Users/lukem/source/repos/AsmTool/assets/";
 #else
             StringView assetsBasePath = "./assets/";
 #endif

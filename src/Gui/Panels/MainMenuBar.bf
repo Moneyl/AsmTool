@@ -15,7 +15,7 @@ namespace AsmTool.Gui.Panels
         public List<MenuItem> MenuItems = new .() ~ DeleteContainerAndItems!(_);
         public ImGui.ID DockspaceId = 0;
         public ImGui.ID DockspaceCentralNodeId = 0;
-        bool ShowImGuiDemo = true;
+        bool ShowImGuiDemo = false;
         public bool ShowFrameTime = true;
 
         public override void Update(App app, Gui gui)
@@ -51,10 +51,10 @@ namespace AsmTool.Gui.Panels
 				    }
                     ImGui.EndMenu();
                 }
-                if (ImGui.BeginMenu("Edit"))
+                /*if (ImGui.BeginMenu("Edit"))
                 {
                     ImGui.EndMenu();
-                }
+                }*/
 
                 //Draw menu item for each panel (e.g. file explorer, properties, log, etc) so user can toggle visibility
                 for (MenuItem item in MenuItems)
@@ -66,57 +66,68 @@ namespace AsmTool.Gui.Panels
                     {
 
                     }
+#if DEBUG
+                    if (ImGui.MenuItem("Dear ImGui Demo", null, &ShowImGuiDemo))
+                    {
+
+                    }
+#endif
+
+                    if (ImGui.BeginMenu("Theme"))
+                    {
+                        bool darkBlueSelected = ImGui.CurrentTheme() == .DarkBlue;
+                        bool orangeSelected = ImGui.CurrentTheme() == .Orange;
+                        bool darkSelected = ImGui.CurrentTheme() == .Dark;
+                        bool lightSelected = ImGui.CurrentTheme() == .Light;
+                        bool classicSelected = ImGui.CurrentTheme() == .Classic;
+                        if (ImGui.MenuItem("Dark blue", null, darkBlueSelected))
+                        {
+                            ImGui.SetThemePreset(.DarkBlue);
+                        }
+                        if (ImGui.MenuItem("Orange", null, orangeSelected))
+                        {
+                            ImGui.SetThemePreset(.Orange);
+                        }
+                        if (ImGui.MenuItem("Dark", null, darkSelected))
+                        {
+                            ImGui.SetThemePreset(.Dark);
+                        }
+                        if (ImGui.MenuItem("Light", null, lightSelected))
+                        {
+                            ImGui.SetThemePreset(.Light);
+                        }
+                        if (ImGui.MenuItem("Classic", null, classicSelected))
+                        {
+                            ImGui.SetThemePreset(.Classic);
+                        }
+                        ImGui.EndMenu();
+                    }
                     ImGui.EndMenu();
                 }
                 if (ImGui.BeginMenu("Tools"))
                 {
-                    if (ImGui.MenuItem("Open test asm_pc"))
+                    if (ImGui.MenuItem("Advanced mode", null, &gui.AdvancedModeEnabled))
                     {
-                        StringView testAsmPath = @"I:\_AsmToolTesting\mpdlc_division\mpdlc_division.asm_pc";
-                        gui.OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
+
                     }
+                    /*if (ImGui.MenuItem("Open test asm_pc"))
+                    {
+                        StringView testAsmPath = @"C:\I\_AsmToolTesting\mp_crashsite\mp_crashsite.asm_pc";
+                        gui.OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
+                    }*/
                     if (ImGui.MenuItem("Validate"))
                     {
                         Win32.MessageBoxA(0, "This feature hasn't been implemented yet.", "Not implemented", .OK);
                     }
                     ImGui.EndMenu();
                 }
-                if (ImGui.BeginMenu("Theme"))
-                {
-                    bool darkBlueSelected = ImGui.CurrentTheme() == .DarkBlue;
-                    bool orangeSelected = ImGui.CurrentTheme() == .Orange;
-                    bool darkSelected = ImGui.CurrentTheme() == .Dark;
-                    bool lightSelected = ImGui.CurrentTheme() == .Light;
-                    bool classicSelected = ImGui.CurrentTheme() == .Classic;
-                    if (ImGui.MenuItem("Dark blue", null, darkBlueSelected))
-                    {
-                        ImGui.SetThemePreset(.DarkBlue);
-                    }
-                    if (ImGui.MenuItem("Orange", null, orangeSelected))
-                    {
-                        ImGui.SetThemePreset(.Orange);
-                    }
-                    if (ImGui.MenuItem("Dark", null, darkSelected))
-                    {
-                        ImGui.SetThemePreset(.Dark);
-                    }
-                    if (ImGui.MenuItem("Light", null, lightSelected))
-                    {
-                        ImGui.SetThemePreset(.Light);
-                    }
-                    if (ImGui.MenuItem("Classic", null, classicSelected))
-                    {
-                        ImGui.SetThemePreset(.Classic);
-                    }
-                    ImGui.EndMenu();
-                }
-                if (ImGui.BeginMenu("Help"))
+                /*if (ImGui.BeginMenu("Help"))
                 {
                     if (ImGui.MenuItem("Welcome")) { }
                     if (ImGui.MenuItem("Metrics")) { }
                     if (ImGui.MenuItem("About")) { }
                     ImGui.EndMenu();
-                }
+                }*/
 
                 var drawList = ImGui.GetWindowDrawList();
                 if (ShowFrameTime)

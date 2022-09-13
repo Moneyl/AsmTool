@@ -21,6 +21,8 @@ namespace AsmTool.Gui
         public MainMenuBar MainMenuBar = new MainMenuBar();
         public GuiDocumentBase FocusedDocument = null;
         public bool CloseAppRequested = false;
+        //When enabled users are given more freedom to edit things as they please. By default this should be disabled so they don't break their asm_pc and to make editing easier.
+        public bool AdvancedModeEnabled = false;
 
 		static void ISystem.Build(App app)
 		{
@@ -31,20 +33,44 @@ namespace AsmTool.Gui
 		void Init(App app)
 		{
             AddPanel("", true, MainMenuBar);
-            AddPanel("View/State viewer", true, new StateViewer());
+#if DEBUG
+            AddPanel("View/State viewer", false, new StateViewer());
 
-            //Hardcoded to open test file for the moment. Will remove later or give it a keybind
-            StringView testAsmPath = @"I:\_AsmToolTesting\terr01_l0\terr01_l0.asm_pc";
-            OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
+            //Files to auto open in debug builds for dev purposes
+            static StringView[?] testAsmPaths =
+			.(
+                @"C:\I\_AsmToolTesting\wc4\wc4.asm_pc",
+                @"C:\I\_AsmToolTesting\mp_crashsite\mp_crashsite.asm_pc",
+                @"C:\I\_AsmToolTesting\terr01_l0\terr01_l0.asm_pc",
+                @"C:\I\_AsmToolTesting\terr01_l1\terr01_l1.asm_pc",
+                @"C:\I\_AsmToolTesting\missions\mission_containers.asm_pc",
+                @"C:\I\_AsmToolTesting\interface\In_world_gps_preload.asm_pc",
+                @"C:\I\_AsmToolTesting\interface\ui_images.asm_pc",
+                @"C:\I\_AsmToolTesting\interface\ui_mp_preload.asm_pc",
+                @"C:\I\_AsmToolTesting\interface\vint_doc_containers.asm_pc"
+			);
+            for (StringView asmPath in testAsmPaths)
+            {
+                OpenDocument(Path.GetFileName(asmPath, .. scope .()), asmPath, new AsmEditorDocument(asmPath));
+            }
+#endif
 
             //Open asm_pc files passed to CLI. Files double clicked in the windows file explorer are also opened this way if file association is set
             BuildConfig config = app.GetResource<BuildConfig>();
             for (String arg in config.Arguments)
             {
-                if (File.Exists(arg) && Path.GetExtension(arg, .. scope .()) == ".asm_pc")
+                if (!File.Exists(arg))
+                    continue;
+
+                String ext = Path.GetExtension(arg, .. scope .());
+                if (ext == ".asm_pc")
                 {
                     OpenDocument(Path.GetFileName(arg, .. scope .()), arg, new AsmEditorDocument(arg));
                 }
+                /*else if (ext == ".vint_doc")
+                {
+                    OpenDocument(Path.GetFileName(arg, .. scope .()), arg, new VintEditorDocument(arg));
+                }*/
             }
 		}
 
