@@ -380,7 +380,15 @@ namespace AsmTool.Gui.Documents
                     ImGui.SameLine();
                     ImGui.HelpMarker("Believed to be runtime only.");
 
-                    if (ImGui.Checkbox("Real", &real))                        changed = true;
+                    if (ImGui.Checkbox("Real", &real))
+					{
+						changed = true;
+                        if (real && !gui.AdvancedModeEnabled)
+                        {
+                            passive = false;
+                            virtualFlag = false;
+                        }
+                    }
                     ImGui.SameLine();
                     ImGui.HelpMarker("Has a str2_pc file with its name. When this is checked Passive and Virtual shouldn't be checked.");
 
