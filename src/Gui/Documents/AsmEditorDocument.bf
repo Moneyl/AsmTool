@@ -24,6 +24,18 @@ namespace AsmTool.Gui.Documents
         private bool _primitiveNameEditEnabled = false;
         private String _primitiveNameEditBuffer = new .() ~delete _;
 
+        //Search bar strings
+        private String _containerSearchTerm = new .() ~delete _;
+        private bool _containerSearchCaseSensitive = false;
+        private bool _containerSearchPrimitives = false; //If true container search also checks if any primitive names match the search
+        private append List<AsmFileV5.Container> _filteredContainers; //Filtered list of containers based on search term
+        private bool _containerSearchTermChanged = true;
+
+        private String _primitiveSearchTerm = new .() ~delete _;
+        private bool _primitiveSearchCaseSensitive = false;
+        private append List<AsmFileV5.Primitive> _filteredPrimitives; //Filtered list of primitives based on search term
+        private bool _primitiveSearchTermChanged = true;
+
         ///Heights of the container and primitive tables. Calculated each frame in .Update()
         private f32 _tableHeight = 0.0f;
 
@@ -121,6 +133,14 @@ namespace AsmTool.Gui.Documents
 #region ContainerEditor
         public void DrawContainerTable(App app, Gui gui)
         {
+            UpdateContainerSearchFilter();
+            ImGui.SetNextItemWidth(400.0f);
+            _containerSearchTermChanged = ImGui.InputText("Search##ContainerSearch", _containerSearchTerm);
+            ImGui.SameLine();
+            _containerSearchTermChanged |= ImGui.Checkbox("Case sensitive", &_containerSearchCaseSensitive);
+            ImGui.SameLine();
+            _containerSearchTermChanged |= ImGui.Checkbox("Recursive", &_containerSearchPrimitives);
+            ImGui.TooltipOnPrevious("Check if any primitives names contain the search term");
             if (ImGui.BeginTable("Containers", 6, .ScrollY | .RowBg | .BordersOuter | .BordersV | .Resizable | .Reorderable | .Hideable | .SizingStretchProp, .(0.0f, _tableHeight)))
             {
 #if DEBUG
@@ -139,12 +159,12 @@ namespace AsmTool.Gui.Documents
 
                 //Use list clipper to only render a subset of the items. Performance on large asms like terr01_l0.asm_pc is terrible if we render every single line
                 ImGui.ListClipper clipper = .();
-                clipper.Begin((i32)AsmFile.Containers.Count);
+                clipper.Begin((i32)_filteredContainers.Count);
                 while (clipper.Step())
                 {
                     for (i32 row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
                     {
-                        AsmFileV5.Container container = AsmFile.Containers[row];
+                        AsmFileV5.Container container = _filteredContainers[row];
                         bool selected = (container == _selectedContainer);
                         String containerNameWithExt = scope $"{container.Name}.str2_pc";
 
@@ -200,6 +220,9 @@ namespace AsmTool.Gui.Documents
                                     _primitiveNameEditBuffer.Clear();
                                 }
             				}
+                            //Reset primitive search bar
+                            _primitiveSearchTermChanged = true;
+                            _primitiveSearchTerm.Set("");
                         }
                         /*if (!inAsmFolder || virtualFlag)
                         {
@@ -257,6 +280,46 @@ namespace AsmTool.Gui.Documents
 
                 ImGui.EndTable();
             }
+        }
+
+        ///Make filtered list of containers based on search term and options
+        private void UpdateContainerSearchFilter()
+        {
+            if (!_containerSearchTermChanged && !FirstDraw)
+            {
+                return;
+            }
+            _filteredContainers.Clear();
+
+            if (_containerSearchTerm == "")
+            {
+                _containerSearchTermChanged = false;
+                _filteredContainers.AddRange(AsmFile.Containers);
+                return;
+            }
+
+            for (AsmFileV5.Container container in AsmFile.Containers)
+            {
+                //Search primitive names if that option is selected
+                bool primitiveSearchResult = false;
+                if (_containerSearchPrimitives)
+                {
+                    for (AsmFileV5.Primitive primitive in container.Primitives)
+                    {
+                        if (primitive.Name.Contains(_containerSearchTerm, !_containerSearchCaseSensitive))
+                        {
+                            primitiveSearchResult = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (primitiveSearchResult || container.Name.Contains(_containerSearchTerm, !_containerSearchCaseSensitive))
+                {
+                    _filteredContainers.Add(container);
+                }
+            }
+            _containerSearchTermChanged = false;
         }
 
         public void DrawContainerEditor(App app, Gui gui)
@@ -452,6 +515,11 @@ namespace AsmTool.Gui.Documents
                 return;
             }
 
+            UpdatePrimitiveSearchFilter();
+            ImGui.SetNextItemWidth(400.0f);
+            _primitiveSearchTermChanged = ImGui.InputText("Search##PrimitiveSearch", _primitiveSearchTerm);
+            ImGui.SameLine();
+            _primitiveSearchTermChanged |= ImGui.Checkbox("Case sensitive##Prim", &_primitiveSearchCaseSensitive);
             if (ImGui.BeginTable("Primitives", 7, .ScrollY | .RowBg | .BordersOuter | .BordersV | .Resizable | .Reorderable | .Hideable | .SizingStretchProp, .(0.0f, _tableHeight)))
             {
                 #if DEBUG
@@ -471,12 +539,12 @@ namespace AsmTool.Gui.Documents
                 ImGui.TableHeadersRow();
 
                 ImGui.ListClipper clipper = .();
-                clipper.Begin((i32)_selectedContainer.Primitives.Count);
+                clipper.Begin((i32)_filteredPrimitives.Count);
                 while (clipper.Step())
                 {
                     for (i32 row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
                     {
-                        AsmFileV5.Primitive primitive = _selectedContainer.Primitives[row];
+                        AsmFileV5.Primitive primitive = _filteredPrimitives[row];
                         bool selected = (primitive == _selectedPrimitive);
 
                         //Name
@@ -534,6 +602,33 @@ namespace AsmTool.Gui.Documents
 
                 ImGui.EndTable();
             }
+        }
+
+        ///Make filtered list of primitives based on search term and options
+        private void UpdatePrimitiveSearchFilter()
+        {
+            if (!_primitiveSearchTermChanged && !FirstDraw)
+                return;
+
+            _filteredPrimitives.Clear();
+            if (_selectedContainer == null)
+            {
+                _primitiveSearchTermChanged = false;
+            	return;
+            }
+            if (_primitiveSearchTerm == "")
+            {
+                _primitiveSearchTermChanged = false;
+                _filteredPrimitives.AddRange(_selectedContainer.Primitives);
+                return;
+            }
+            for (AsmFileV5.Primitive primitive in _selectedContainer.Primitives)
+            {
+                if (primitive.Name.Contains(_primitiveSearchTerm, !_primitiveSearchCaseSensitive))
+                    _filteredPrimitives.Add(primitive);
+            }
+
+            _primitiveSearchTermChanged = false;
         }
 
         public void DrawPrimitiveEditor(App app, Gui gui)
