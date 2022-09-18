@@ -117,7 +117,11 @@ namespace AsmTool.Gui.Panels
                     }*/
                     if (ImGui.MenuItem("Validate"))
                     {
-                        Win32.MessageBoxA(0, "This feature hasn't been implemented yet.", "Not implemented", .OK);
+                        if (gui.FocusedDocument != null && gui.FocusedDocument.GetType() == typeof(AsmEditorDocument))
+                        {
+                            AsmEditorDocument asmDoc = (AsmEditorDocument)gui.FocusedDocument;
+                            asmDoc.Validate();
+                        }
                     }
                     ImGui.EndMenu();
                 }

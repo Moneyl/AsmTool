@@ -104,6 +104,8 @@ namespace AsmTool.Gui.Documents
 
         public override void Save(App app, Gui gui)
         {
+            FileStream stream = scope .()..Open(AsmFilePath, .Write, .Read);
+            AsmFile.Write(stream);
             return;
         }
 
@@ -792,5 +794,10 @@ namespace AsmTool.Gui.Documents
             ImGui.EndChild();
         }
 #endregion PrimitiveEditor
+
+        public void Validate()
+        {
+
+        }
     }
 }

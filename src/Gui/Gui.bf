@@ -9,6 +9,7 @@ using System.IO;
 using AsmTool;
 using System;
 using ImGui;
+using AsmTool.Misc;
 
 namespace AsmTool.Gui
 {
@@ -84,6 +85,13 @@ namespace AsmTool.Gui
 
                 panel.Update(app, this);
                 panel.FirstDraw = false;
+            }
+
+            Input input = app.GetResource<Input>();
+            if (input.KeyDown(.Control) && input.KeyDown(.S) && FocusedDocument != null)
+            {
+                FocusedDocument.Save(app, this);
+                FocusedDocument.UnsavedChanges = false;
             }
 
             for (GuiDocumentBase document in Documents.ToList(.. scope .())) //Iterate temporary list to we can delete documents from main list while iterating
