@@ -134,10 +134,11 @@ namespace AsmTool.Gui.Panels
                 }*/
 
                 var drawList = ImGui.GetWindowDrawList();
+                uint32 primaryTextColor = ImGui.ColorConvertFloat4ToU32(ImGui.GetStyle().Colors[(int)ImGui.Col.Text]);
+                uint32 secondaryTextColor = ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor);
+
                 if (ShowFrameTime)
                 {
-                    uint32 primaryTextColor = ImGui.ColorConvertFloat4ToU32(ImGui.GetStyle().Colors[(int)ImGui.Col.Text]);
-                    uint32 secondaryTextColor = ImGui.ColorConvertFloat4ToU32(ImGui.SecondaryTextColor);
                     String realFrameTime = scope String()..AppendF("{0:G3}", frameData.AverageFrameTime * 1000.0f);
                     String totalFrameTime = scope String()..AppendF("/  {0:G4}", frameData.DeltaTime * 1000.0f);
 
@@ -146,6 +147,13 @@ namespace AsmTool.Gui.Panels
                     drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x, 5.0f), secondaryTextColor, realFrameTime.CStr());
                     drawList.AddText(.(ImGui.GetCursorPosX() + (f32)textSize.x + 42.0f, 5.0f), secondaryTextColor, totalFrameTime.CStr());
                 }
+
+                //Draw app version on right side
+                BuildConfig build = app.GetResource<BuildConfig>();
+                f32 versionTextWidth = ImGui.CalcTextSize(build.Version.Ptr, build.Version.Ptr + build.Version.Length).x;
+                f32 padding = 8.0f;
+                ImGui.Vec2 cursorPos = .(ImGui.GetWindowWidth() - versionTextWidth - padding, 5.0f);
+                drawList.AddText(cursorPos, primaryTextColor, build.Version.Ptr, build.Version.Ptr + build.Version.Length);
 
                 ImGui.EndMainMenuBar();
             }
