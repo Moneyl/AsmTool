@@ -76,7 +76,7 @@ namespace AsmTool.Gui.Panels
                     ImGui.TableNextColumn();
                     ImGui.Separator();
 
-                    for (int stageIndex in 0 ..< Enum.Count<SystemStage>() - 1)
+                    for (int stageIndex in 0 ..< Enum.Count<SystemStage>())
                     {
                         Stage stage = app.[Friend]_stages[stageIndex];
                         ImGui.TableNextRow();
