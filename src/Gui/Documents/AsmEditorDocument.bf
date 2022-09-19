@@ -10,6 +10,64 @@ namespace AsmTool.Gui.Documents
 {
     public class AsmEditorDocument : GuiDocumentBase
     {
+        private enum LogItemType
+        {
+            Empty,
+            Container,
+            Primitive
+        }
+
+        private enum LogLevel
+        {
+            Info,
+            Warning,
+            Error
+        }
+
+        private class LogItem
+        {
+            [Union]
+            private struct LogItemData
+            {
+                public Object Empty = null;
+                public AsmFileV5.Container Container;
+                public AsmFileV5.Primitive Primitive;
+            }
+
+            public DateTime Time;
+            public LogItemType Type;
+            public LogItemData Data;
+            public LogLevel Level;
+            public String Text = new .() ~delete _;
+
+            public this(AsmFileV5.Container container, StringView text, LogLevel level)
+            {
+                Time = DateTime.Now;
+                Type = .Container;
+                Data.Container = container;
+                Text.Set(text);
+                Level = level;
+            }
+
+            public this(AsmFileV5.Primitive primitive, StringView text, LogLevel level)
+            {
+                Time = DateTime.Now;
+                Type = .Primitive;
+                Data.Primitive = primitive;
+                Text.Set(text);
+                Level = level;
+            }
+
+            public this(StringView text, LogLevel level)
+            {
+                Time = DateTime.Now;
+                Type = .Empty;
+                Data.Empty = null;
+                Text.Set(text);
+                Level = level;
+            }
+        }
+
         append String AsmFilePath; //Path of the asm_pc file
         append String AsmFilename; //The files name
         append String AsmFolderPath; //Path of the folder containing the asm_pc file
@@ -36,8 +94,17 @@ namespace AsmTool.Gui.Documents
         private append List<AsmFileV5.Primitive> _filteredPrimitives; //Filtered list of primitives based on search term
         private bool _primitiveSearchTermChanged = true;
 
-        ///Heights of the container and primitive tables. Calculated each frame in .Update()
+        ///Height percentages of each section of the UI. Calculated each frame in .Update()
+        private f32 _tableHeightPercentage = 0.4f;
+        private f32 _editorHeightPercentage = 0.4f;
+        private f32 _logHeightPercentage = 0.2f;
         private f32 _tableHeight = 0.0f;
+        private f32 _editorHeight = 0.0f;
+        private f32 _logHeight = 0.0f;
+
+        //Log contents
+        private List<LogItem> _logItems = new .() ~DeleteContainerAndItems!(_);
+        private LogItem _selectedLogItem = null;
 
         public this(StringView asmFilePath)
         {
@@ -61,6 +128,8 @@ namespace AsmTool.Gui.Documents
                     _asmFolderFilesList.Add(new .(filename));
                 }
             }
+
+            Log(scope $"Loaded {AsmFilename}...", .Info);
         }
 
         public override void Update(App app, Gui gui)
@@ -73,7 +142,6 @@ namespace AsmTool.Gui.Documents
                 ImGui.SetColumnWidth(0, (windowWidth - 5.0f) / 2.0f);
                 ImGui.SetColumnWidth(1, (windowWidth - 5.0f) / 2.0f);
             }
-            _tableHeight = ImGui.GetWindowHeight() * 0.5f;
 
             //Column headers
             using (ImGui.Font(FontManager.FontL))
@@ -92,6 +160,13 @@ namespace AsmTool.Gui.Documents
             ImGui.ScopedStyleColor!(ImGui.Col.HeaderActive, highlightColor);
 
             ImGui.NextColumn();
+            DrawContainerSearchBar();
+            f32 windowHeight = ImGui.GetWindowViewport().WorkSize.y;
+            f32 useableAreaHeight = windowHeight - ImGui.GetCursorPosY();
+            _tableHeight = useableAreaHeight * (_tableHeightPercentage / (_tableHeightPercentage + _editorHeightPercentage + _logHeightPercentage));
+            _editorHeight = useableAreaHeight * (_editorHeightPercentage / (_tableHeightPercentage + _editorHeightPercentage + _logHeightPercentage));
+            _logHeight = useableAreaHeight * (_logHeightPercentage / (_tableHeightPercentage + _editorHeightPercentage + _logHeightPercentage));
+
             DrawContainerTable(app, gui);
             DrawContainerEditor(app, gui);
 
@@ -100,6 +175,8 @@ namespace AsmTool.Gui.Documents
             DrawPrimitiveEditor(app, gui);
 
             ImGui.Columns(1);
+
+            DrawLog(app, gui);
         }
 
         public override void Save(App app, Gui gui)
@@ -133,7 +210,7 @@ namespace AsmTool.Gui.Documents
         }
 
 #region ContainerEditor
-        public void DrawContainerTable(App app, Gui gui)
+        private void DrawContainerSearchBar()
         {
             UpdateContainerSearchFilter();
             ImGui.SetNextItemWidth(400.0f);
@@ -143,6 +220,10 @@ namespace AsmTool.Gui.Documents
             ImGui.SameLine();
             _containerSearchTermChanged |= ImGui.Checkbox("Recursive", &_containerSearchPrimitives);
             ImGui.TooltipOnPrevious("Check if any primitives names contain the search term");
+        }
+
+        public void DrawContainerTable(App app, Gui gui)
+        {
             if (ImGui.BeginTable("Containers", 6, .ScrollY | .RowBg | .BordersOuter | .BordersV | .Resizable | .Reorderable | .Hideable | .SizingStretchProp, .(0.0f, _tableHeight)))
             {
 #if DEBUG
@@ -327,14 +408,15 @@ namespace AsmTool.Gui.Documents
         public void DrawContainerEditor(App app, Gui gui)
         {
             //Container editor
-            if (_selectedContainer == null)
+            if (ImGui.BeginChild("ContainerEditor", .(0.0f, _editorHeight)))
             {
-                ImGui.Text(scope String(Icons.ICON_FA_EXCLAMATION_TRIANGLE)..Append(" Select a container to edit it"));
-                return;
-            }
+                if (_selectedContainer == null)
+                {
+                    ImGui.Text(scope String(Icons.ICON_FA_EXCLAMATION_TRIANGLE)..Append(" Select a container to edit it"));
+                    ImGui.EndChild();
+                    return;
+                }
 
-            if (ImGui.BeginChild("ContainerEditor"))
-            {
                 ImGui.PushItemWidth(400.0f);
                 if (_containerNameEditEnabled)
                 {
@@ -644,7 +726,7 @@ namespace AsmTool.Gui.Documents
                 return;
             }
 
-            if (ImGui.BeginChild("PrimitiveEditor"))
+            if (ImGui.BeginChild("PrimitiveEditor", .(0.0f, _editorHeight)))
             {
                 ImGui.PushItemWidth(400.0f);
                 if (_primitiveNameEditEnabled)
@@ -795,9 +877,85 @@ namespace AsmTool.Gui.Documents
         }
 #endregion PrimitiveEditor
 
-        public void Validate()
+        private void ClearLog()
         {
+            ClearAndDeleteItems(_logItems);
+            _selectedLogItem = null;
+        }
 
+        private void Log(AsmFileV5.Container data, StringView text, LogLevel level = .Info)
+        {
+            _logItems.Add(new .(data, text, level));
+        }
+
+        private void Log(AsmFileV5.Primitive data, StringView text, LogLevel level = .Info)
+        {
+            _logItems.Add(new .(data, text, level));
+        }
+
+        private void Log(StringView text, LogLevel level = .Info)
+        {
+            _logItems.Add(new .(text, level));
+        }
+
+        private void DrawLog(App app, Gui gui)
+        {
+            static bool autoScrollLog = true;
+            ImGui.ToggleButton(Icons.ICON_FA_ARROW_DOWN, &autoScrollLog);
+            ImGui.TooltipOnPrevious("Auto scroll");
+            ImGui.SameLine();
+
+            ImGui.BeginChild("LogPanel", .(0.0f, _logHeight - 20.0f), true);
+            for (LogItem item in _logItems)
+            {
+                bool selected = (item == _selectedLogItem);
+
+                //Draw invisible label first so all messages are aligned and so highlighting a selectable doesn't make the label invisible (drawing selectable second covers the label when highlighted)
+                ImGui.Vec2 labelPos = ImGui.GetCursorPos();
+                ImGui.TextColored(.(0.0f, 0.0f, 0.0f, 0.0f), "[Warning]  "); //The longest label + a bit more padding
+                ImGui.SameLine();
+
+                //Draw text
+                if (ImGui.Selectable(item.Text, selected, .SpanAllColumns))
+                {
+                    if (selected)
+                        _selectedLogItem = null;
+                    else
+                        _selectedLogItem = item;
+
+                    //TODO: Get referenced object (container or primitive)
+                    //TODO: Jump to referenced object in container/primitive tables + lists
+                }
+
+                //Draw log level label
+                ImGui.SetCursorPos(labelPos);
+                switch(item.Level)
+                {
+                    case .Info:
+                        ImGui.Text("[Info]");
+                    case .Warning:
+                        ImGui.TextColored(.Yellow, "[Warning]"); //Yellow
+                    case .Error:
+                        ImGui.TextColored(.Red, "[Error]"); //Red
+                    default:
+                }
+            }
+            if (autoScrollLog) ImGui.SetScrollHereY();
+            ImGui.EndChild();
+        }
+
+        ///Check for outdated or problematic data in asm_pc file that might cause it not to work with the game
+        public void Validate(App app, Gui gui)
+        {
+            //TODO: Implement
+            Log("Validation hasn't implemented yet...");
+        }
+
+        ///Automatically update the contents of the asm_pc file by looking at the str2_pc files in the same folder and comparing entry sizes & offsets
+        public void AutoUpdate(App app, Gui gui)
+        {
+            //TODO: Implement
+            Log("Auto update hasn't implemented yet...");
         }
     }
 }

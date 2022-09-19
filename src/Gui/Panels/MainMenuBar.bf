@@ -110,18 +110,16 @@ namespace AsmTool.Gui.Panels
                     {
 
                     }
-                    /*if (ImGui.MenuItem("Open test asm_pc"))
+                    bool asmDocumentFocused = gui.FocusedDocument != null && gui.FocusedDocument.GetType() == typeof(AsmEditorDocument);
+                    if (ImGui.MenuItem("Auto update", "F1", null, asmDocumentFocused))
                     {
-                        StringView testAsmPath = @"C:\I\_AsmToolTesting\mp_crashsite\mp_crashsite.asm_pc";
-                        gui.OpenDocument(Path.GetFileName(testAsmPath, .. scope .()), testAsmPath, new AsmEditorDocument(testAsmPath));
-                    }*/
-                    if (ImGui.MenuItem("Validate"))
+                        AsmEditorDocument asmDoc = (AsmEditorDocument)gui.FocusedDocument;
+                        asmDoc.AutoUpdate(app, gui);
+                    }
+                    if (ImGui.MenuItem("Validate", "F5", null, asmDocumentFocused))
                     {
-                        if (gui.FocusedDocument != null && gui.FocusedDocument.GetType() == typeof(AsmEditorDocument))
-                        {
-                            AsmEditorDocument asmDoc = (AsmEditorDocument)gui.FocusedDocument;
-                            asmDoc.Validate();
-                        }
+                        AsmEditorDocument asmDoc = (AsmEditorDocument)gui.FocusedDocument;
+                        asmDoc.Validate(app, gui);
                     }
                     ImGui.EndMenu();
                 }

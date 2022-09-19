@@ -87,12 +87,7 @@ namespace AsmTool.Gui
                 panel.FirstDraw = false;
             }
 
-            Input input = app.GetResource<Input>();
-            if (input.KeyDown(.Control) && input.KeyDown(.S) && FocusedDocument != null)
-            {
-                FocusedDocument.Save(app, this);
-                FocusedDocument.UnsavedChanges = false;
-            }
+            HandleKeybinds(app);
 
             for (GuiDocumentBase document in Documents.ToList(.. scope .())) //Iterate temporary list to we can delete documents from main list while iterating
             {
@@ -138,6 +133,37 @@ namespace AsmTool.Gui
             //Draw close confirmation dialogs for documents with unsaved changes
             DrawDocumentCloseConfirmationPopup(app);
 		}
+
+        void HandleKeybinds(App app)
+        {
+            Input input = app.GetResource<Input>();
+            if (FocusedDocument != null)
+            {
+                if (input.KeyDown(.Control) && input.KeyPressed(.S))
+                {
+                    FocusedDocument.Save(app, this);
+                    FocusedDocument.UnsavedChanges = false;
+                }
+                if (input.KeyPressed(.F5))
+                {
+                    bool asmDocumentFocused = FocusedDocument.GetType() == typeof(AsmEditorDocument);
+                    if (asmDocumentFocused)
+                    {
+                        AsmEditorDocument asmDoc = (AsmEditorDocument)FocusedDocument;
+                        asmDoc.Validate(app, this);
+                    }
+                }
+                if (input.KeyPressed(.F1))
+                {
+                    bool asmDocumentFocused = FocusedDocument.GetType() == typeof(AsmEditorDocument);
+                    if (asmDocumentFocused)
+                    {
+                        AsmEditorDocument asmDoc = (AsmEditorDocument)FocusedDocument;
+                        asmDoc.AutoUpdate(app, this);
+                    }
+                }
+            }
+        }
 
         ///Confirms that the user wants to close documents with unsaved changes
         void DrawDocumentCloseConfirmationPopup(App app)

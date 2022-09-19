@@ -10,6 +10,7 @@ namespace ImGui
         public static Vec4<f32> SecondaryTextColor = .(0.32f, 0.67f, 1.0f, 1.00f);//.(0.2f, 0.7f, 1.0f, 1.00f) * 0.92f; //Light blue;
         public static Vec4<f32> TertiaryTextColor = .(0.64f, 0.67f, 0.69f, 1.00f); //Light grey;
         public static Vec4<f32> Red = .(0.784f, 0.094f, 0.035f, 1.0f);
+        public static Vec4<f32> Yellow = .(0.784f, 0.682f, 0.035f, 1.0f);
 
         [Comptime]
         private static void ComptimeChecks()
@@ -155,6 +156,25 @@ namespace ImGui
         {
             String strNullTerminated = scope .(str, .NullTerminate);
             ImGui.SetClipboardText(strNullTerminated.Ptr);
+        }
+
+        public static bool Button(StringView label, ImGui.Vec2 size = .Zero)
+        {
+            String strNullTerminated = scope .(label, .NullTerminate);
+            return ImGui.Button(strNullTerminated.Ptr, size);
+        }
+
+        public static bool ToggleButton(StringView label, bool* value, ImGui.Vec2 size = .Zero)
+        {
+            ImGui.PushStyleVar(.FrameBorderSize, *value ? 1.0f : 0.0f);
+            ImGui.PushStyleColor(.Button, *value ? ImGui.GetColorU32(.ButtonHovered) : ImGui.GetColorU32(.WindowBg));
+            bool buttonClicked = ImGui.Button(label, size);
+            ImGui.PopStyleColor();
+            ImGui.PopStyleVar();
+            if (buttonClicked)
+                *value = !(*value);
+
+            return buttonClicked;
         }
 
         public enum ThemePreset
