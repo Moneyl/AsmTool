@@ -658,6 +658,31 @@ namespace AsmTool.Gui.Documents
                             ImGui.EndPopup();
                         }
 
+                        //Label primitives that are in the precache vpp_pc. Makes it easier to find them
+                        bool inPrecacheVpp = true;
+                        precacheCheck: for (AsmFileV5.Container container in AsmFile.Containers)
+                        {
+                            bool virtualFlag = ((u16)container.Flags & 512) != 0;
+                            bool passive = ((u16)container.Flags & 256) != 0;
+                            bool real = ((u16)container.Flags & 128) != 0;
+                            if (!real || virtualFlag || passive) //Only check real containers
+                                continue;
+
+                            for (AsmFileV5.Primitive prim in container.Primitives)
+                            {
+                                if (StringView.Equals(prim.Name, primitive.Name, true))
+                                {
+                                    inPrecacheVpp = false;
+                                    break precacheCheck;
+                                }
+                            }
+                        }
+                        if (inPrecacheVpp)
+                        {
+                            ImGui.SameLine();
+                            ImGui.TextColored("(Precache)", .(1.0f, 0.4f, 0.0f, 1.0f));
+                        }
+
                         //Type
                         ImGui.TableNextColumn();
                         ImGui.Text(primitive.Type.ToString(.. scope .()));
